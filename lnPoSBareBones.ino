@@ -91,6 +91,7 @@ bool selected = false;
 bool lnurlCheckPoS = false;
 bool lnurlCheckATM = false;
 double amountToShowNumber;
+int batteryPercentage;
 enum InvoiceType {
   LNPOS,
   LNURLPOS,
@@ -320,6 +321,7 @@ int ledState = HIGH;                    //Initial LED state HIGH=ON, LOW=OFF
 int lastButtonState = LOW;
 int brightness = 0;
 unsigned long buttonPressStartTime = 0; // Variable to store the time when the button was pressed
+unsigned long buttonPressStartTime2 = 0; // Variable to store the time when the button was pressed
 bool LED_STATE_CHANGED = false; 
 
 void setup()
@@ -1061,9 +1063,48 @@ void getKeypad(bool isATMPin, bool justKey, bool isLN, bool isATMNum)
   //Get out of pretend sleep mode and turn on the screen
   if (isPretendSleeping == true){
     key_val = "*"; 
+        tft.setFreeFont(SMALLFONT);
+        tft.setTextSize(1);
+        tft.setCursor(0, 15);
+        tft.setTextColor(TFT_ORANGE, TFT_BLACK);
+        tft.print("- MENU -");
+        tft.setCursor(2, 124);
+        tft.println("B");
+        tft.drawLine(5, 126, 5, 112, TFT_ORANGE);
+        tft.drawLine(8, 114, 8, 112, TFT_ORANGE);
+        tft.drawLine(8, 126, 8, 124, TFT_ORANGE);
+        tft.setTextSize(2);
+        tft.setFreeFont(TINYFONT);
+        tft.setCursor(15, 125);
+        tft.println(" NEXT ");
+        tft.setFreeFont(SMALLFONT);
+        tft.setTextSize(1);
+        tft.setCursor(60, 125);
+        tft.println("*");
+        tft.setFreeFont(TINYFONT);
+        tft.setTextSize(2);
+        tft.setCursor(72, 125);
+        tft.println("SELECT");        
+    if (batteryPercentage == USB_POWER) {
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    batteryPercentageText = " USB";
+  } else {
+    if (batteryPercentage >= 60) {
+      tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    } else if (batteryPercentage >= 20) {
+      tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+    } else {
+      tft.setTextColor(TFT_RED, TFT_BLACK);
+    }
+  } 
+  tft.setCursor(105, 12);
+  tft.setTextSize(1);
+  tft.setFreeFont(TINYFONT);
+  tft.print(batteryPercentageText);
   }
-  isPretendSleeping = false;
-  digitalWrite(TFT_LED, HIGH);
+
+   isPretendSleeping = false;
+   digitalWrite(TFT_LED, HIGH);
 
   if (key_val != "") {
     timeOfLastInteraction = millis();
@@ -1398,10 +1439,10 @@ void qrShowCodeln()
       }
     }
   }
-  tft.setCursor(10, 220);
+  //tft.setCursor(10, 220);
   tft.setTextSize(1);
   tft.setTextColor(TFT_BLACK, TFT_WHITE);
-  tft.print("* MENU");
+  //tft.print("* MENU");
 }
 
 void qrShowCodeOnchain(bool anAddress, String message)
@@ -1488,10 +1529,10 @@ void qrShowCodeLNURL(String message)
       }
     }
   }
-  tft.setCursor(10, 220);
+  //tft.setCursor(10, 220);
   tft.setTextSize(1);
   tft.setTextColor(TFT_BLACK, TFT_WHITE);
-  tft.println(message);
+  //tft.println(message);
 }
 
 void error(String message)
@@ -1590,14 +1631,16 @@ long int lastBatteryCheck = 0;
 void updateBatteryStatus(bool force = false)
 {
   // throttle
-  if (!force && lastBatteryCheck != 0 && millis() - lastBatteryCheck < 10000 || isPretendSleeping == true) {
+  if (!force && lastBatteryCheck != 0 && millis() - lastBatteryCheck < 15000 || isPretendSleeping == true) {
     return;
   }
 
   lastBatteryCheck = millis();
 
   // update
-  const int batteryPercentage = getBatteryPercentage();
+ delay(100);
+ batteryPercentage = getBatteryPercentage();
+ 
 
   batteryPercentageText = "";
 
@@ -1648,7 +1691,7 @@ void currencyLoop()
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.print(" *NEXT /SELECT");
 
-  updateBatteryStatus(true);
+  updateBatteryStatus();
 
   bool currencySelected = true;
   int currencyItemNo = 0;
@@ -1711,6 +1754,24 @@ void menuLoop()
 {
   // footer/header
   tft.fillScreen(TFT_BLACK);
+  updateBatteryStatus();
+    if (batteryPercentage == USB_POWER) {
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    batteryPercentageText = " USB";
+  } else {
+    if (batteryPercentage >= 60) {
+      tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    } else if (batteryPercentage >= 20) {
+      tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+    } else {
+      tft.setTextColor(TFT_RED, TFT_BLACK);
+    }
+  } 
+  tft.setCursor(105, 12);
+  tft.setTextSize(1);
+  tft.setFreeFont(TINYFONT);
+  tft.print(batteryPercentageText);
+  
   tft.setFreeFont(SMALLFONT);
   tft.setTextSize(1);
   tft.setCursor(0, 15);
@@ -1734,7 +1795,7 @@ void menuLoop()
   tft.setCursor(72, 125);
   tft.println("SELECT");
 
-  updateBatteryStatus(true);
+
 
   // menu items
   selection = "";
@@ -1747,8 +1808,24 @@ void menuLoop()
     {
       menuItemNo++;
     }
-
+/*
     // footer/header
+        if (batteryPercentage == USB_POWER) {
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    batteryPercentageText = " USB";
+  } else {
+    if (batteryPercentage >= 60) {
+      tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    } else if (batteryPercentage >= 20) {
+      tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+    } else {
+      tft.setTextColor(TFT_RED, TFT_BLACK);
+    }
+  }
+    tft.setCursor(105, 12);
+    tft.setTextSize(1);
+    tft.setFreeFont(TINYFONT);
+    tft.print(batteryPercentageText);
     tft.setFreeFont(SMALLFONT);
     tft.setTextSize(1);
     tft.setCursor(0, 15);
@@ -1771,6 +1848,7 @@ void menuLoop()
     tft.setTextSize(2);
     tft.setCursor(72, 125);
     tft.println("SELECT");
+    */
     
     tft.setFreeFont(SMALLFONT);
     tft.setCursor(1, 33);
@@ -1805,8 +1883,6 @@ void menuLoop()
       
       maybeSleepDevice();
       key_val = "";
-      getKeypad(false, true, false, false);
-      
       int buttonState = digitalRead(buttonPin);
       
       // Check the state of the button and perform an action when pressed
@@ -1823,6 +1899,7 @@ void menuLoop()
 
        if (buttonState == LOW) {
           buttonPressStartTime = millis(); 
+          buttonPressStartTime2 = millis(); 
           }
 
       if (buttonState == HIGH && !isPretendSleeping) {
@@ -1844,7 +1921,19 @@ void menuLoop()
                   }
                   }
             LED_STATE_CHANGED = true;
-            }
+            }   
+       }
+
+       if (buttonState == HIGH && !isPretendSleeping) {
+          unsigned long buttonPressDuration2 = millis() - buttonPressStartTime2;          
+            if (buttonPressDuration2 >= 4000) { // If the button was held for at least 1 second
+              buttonPressStartTime2 = millis(); //reset the timer for button pressing
+              sleepAnimation();
+              esp_sleep_enable_ext0_wakeup(GPIO_NUM_7, 1); 
+              delay(1000);
+              esp_deep_sleep_start();
+              pinMode(buttonPin, INPUT_PULLUP); 
+            }   
        }
         //while LEDs and screen are on allow the pot to change the brightness
         if (ledState == HIGH && !isPretendSleeping) {        
@@ -1853,7 +1942,9 @@ void menuLoop()
           for (int i = 0; i < numLeds; i++) {
           analogWrite(ledPins[i], brightness);
           }
-          }       
+          }
+
+      getKeypad(false, true, false, false);
     
       if (key_val == "*")
       {
@@ -2233,14 +2324,14 @@ int xor_encrypt(uint8_t *output, size_t outlen, uint8_t *key, size_t keylen, uin
 
 unsigned int getBatteryPercentage()
 {
-  const float batteryMaxVoltage = 4.15;
-  const float batteryMinVoltage = 3.73;
+  const float batteryMaxVoltage = 4.2;
+  const float batteryMinVoltage = 3.0;
 
   const float batteryAllowedRange = batteryMaxVoltage - batteryMinVoltage;
   const float batteryCurVAboveMin = getInputVoltage() - batteryMinVoltage;
 
   const int batteryPercentage = (int)(batteryCurVAboveMin / batteryAllowedRange * 100);
-  if (batteryPercentage > 150) {
+  if (batteryPercentage > 120) {
     return USB_POWER;
   }
 
@@ -2313,7 +2404,7 @@ void loadConfig() {
 bool isPoweredExternally() {
   Serial.println("Is powered externally?");
   float inputVoltage = getInputVoltage();
-  if (inputVoltage > 4.44)
+  if (inputVoltage > 4.5)
   {
     return true;
   }
